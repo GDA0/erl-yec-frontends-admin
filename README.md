@@ -1,2 +1,3 @@
-# erl-yec-frontends-admin
-ERL YEC frontend for admin
+# ERL YEC Frontend for Admin
+
+Admin frontend for the ERL YEC web app
