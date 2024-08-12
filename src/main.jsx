@@ -6,6 +6,7 @@ import { HomePage } from './HomePage.jsx'
 import { Root } from './routes/Root.jsx'
 import { ErrorPage } from './ErrorPage.jsx'
 import { Register } from './routes/Register.jsx'
+import { CheckIn } from './routes/CheckIn.jsx'
 
 import './index.css'
 
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
       {
         path: 'register',
         element: <Register />
+      },
+      {
+        path: 'check-in',
+        element: <CheckIn />
       }
     ]
   }
