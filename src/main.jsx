@@ -7,6 +7,7 @@ import { Root } from './routes/Root.jsx'
 import { ErrorPage } from './ErrorPage.jsx'
 import { Register } from './routes/Register.jsx'
 import { CheckIn } from './routes/CheckIn.jsx'
+import { Dashboard } from './routes/Dashboard.jsx'
 
 import './index.css'
 
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: 'check-in',
         element: <CheckIn />
+      },
+      {
+        path: 'dashboard',
+        element: <Dashboard />
       }
     ]
   }
