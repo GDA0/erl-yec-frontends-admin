@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext, useNavigate, Link } from 'react-router-dom'
 import { Modal, Button } from 'react-bootstrap'
+import { startOfWeek, endOfWeek, format } from 'date-fns'
 
 import axios from '../utils/axios-instance'
 import { formatDate } from '../utils/formatDate'
@@ -15,6 +16,7 @@ export function Dashboard () {
   const [showDeactivateModal, setShowDeactivateModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [userMsg, setUserMsg] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   const navigate = useNavigate()
 
@@ -80,6 +82,44 @@ export function Dashboard () {
     } finally {
       setLoading(false)
       setShowCheckoutModal(false)
+    }
+  }
+
+  async function handleGenerateWeeklyReport () {
+    try {
+      setGenerating(true)
+      const response = await axios.get('generate-weekly-report', {
+        responseType: 'blob'
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+
+      const today = new Date()
+      const startOfThisWeek = format(
+        startOfWeek(today, { weekStartsOn: 1 }),
+        'do MMMM'
+      )
+      const endOfThisWeek = format(
+        endOfWeek(today, { weekStartsOn: 1 }),
+        'do MMMM'
+      )
+      const filename = `Weekly Report - ${startOfThisWeek} to ${endOfThisWeek}.xlsx`
+      link.setAttribute('download', `${filename}`)
+
+      // Append the link to the body
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error(error)
+      setError('An error occurred.')
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -191,8 +231,8 @@ export function Dashboard () {
           className='alert alert-warning mx-auto text-center'
           style={{ maxWidth: '300px' }}
         >
-          <span className='mb-1'>{userMsg}</span>
-          <Link to='check-in'>Check in</Link>
+          <p className='mb-1'>{userMsg}</p>
+          <Link to='/check-in'>Check in</Link>
         </div>
       )}
 
@@ -222,8 +262,15 @@ export function Dashboard () {
               </div>
             </div>
             <div className='mt-auto'>
-              <button className='btn btn-primary w-100' type='submit'>
-                Generate weekly report
+              <button
+                className='btn btn-primary w-100'
+                type='submit'
+                onClick={handleGenerateWeeklyReport}
+                disabled={generating}
+              >
+                {generating
+                  ? 'Generating weekly report...'
+                  : 'Generate weekly report'}
               </button>
             </div>
           </div>
