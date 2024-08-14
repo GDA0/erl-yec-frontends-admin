@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { useOutletContext, useNavigate, Link } from 'react-router-dom'
+import { Modal, Button } from 'react-bootstrap'
+
 import axios from '../utils/axios-instance'
 import { formatDate } from '../utils/formatDate'
 
 export function Dashboard () {
-  const [setUser] = useOutletContext()
+  const [setUser, showCheckoutModal, setShowCheckoutModal] = useOutletContext()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [activeUsers, setActiveUsers] = useState([])
   const [allUsers, setAllUsers] = useState([])
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [userMsg, setUserMsg] = useState('')
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function fetchData (isAutoRefresh = false) {
@@ -24,7 +31,7 @@ export function Dashboard () {
         if (!user) {
           setUser(null)
           localStorage.removeItem('token')
-          setMsg('Your session is over!')
+          setUserMsg('Your session was over.')
         } else {
           setUser(user)
           setActiveUsers(activeUsers)
@@ -49,15 +56,110 @@ export function Dashboard () {
     return () => clearInterval(intervalId)
   }, [setUser])
 
+  async function handleDeactivate (userId) {
+    try {
+      await axios.post('deactivate-user', { userId })
+      setActiveUsers((prev) => prev.filter((user) => user._id !== userId))
+      setShowDeactivateModal(false)
+      setMsg('User deactivated successfully.')
+    } catch (error) {
+      console.error(error)
+      setError('Failed to deactivate user.')
+    }
+  }
+
+  async function handleDeactivateAllActiveUsers () {
+    try {
+      await axios.post('deactivate-all-active-users')
+      setUser(null)
+      localStorage.removeItem('token')
+      navigate('/')
+    } catch (error) {
+      console.error(error)
+      setError('Failed to deactivate users or check-out.')
+    } finally {
+      setLoading(false)
+      setShowCheckoutModal(false)
+    }
+  }
+
+  function DeactivateModal () {
+    if (!selectedUser) return null
+
+    return (
+      <Modal
+        show={showDeactivateModal}
+        onHide={() => setShowDeactivateModal(false)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deactivation</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to deactivate {selectedUser.fullName}?</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant='secondary'
+            onClick={() => setShowDeactivateModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant='danger'
+            onClick={() => handleDeactivate(selectedUser._id)}
+          >
+            Confirm
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+
+  function CheckOutModal () {
+    return (
+      <Modal
+        show={showCheckoutModal}
+        onHide={() => setShowCheckoutModal(false)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Check-out</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>There are currently {activeUsers.length} active users.</p>
+          <p>
+            Checking out will deactivate all active users. Do you wish to
+            proceed?
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant='secondary'
+            onClick={() => setShowCheckoutModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button variant='danger' onClick={handleDeactivateAllActiveUsers}>
+            Confirm and Check-out
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+
   return (
     <>
       {error && (
         <div
-          className='alert alert-danger mx-auto text-center'
+          className='alert alert-danger alert-dismissible fade show mx-auto text-center'
           style={{ maxWidth: '360px' }}
         >
-          <p className='mb-1'>{error}</p>
-          <Link to='/'>Go to Homepage.</Link>
+          <span className='mb-1'>{error}</span>
+          <button
+            type='button'
+            className='btn-close'
+            data-bs-dismiss='alert'
+            aria-label='Close'
+          />
         </div>
       )}
 
@@ -71,13 +173,31 @@ export function Dashboard () {
 
       {msg && (
         <div
+          className='alert alert-warning alert-dismissible fade show mx-auto text-center'
+          style={{ maxWidth: '300px' }}
+        >
+          <span className='mb-1'>{msg}</span>
+          <button
+            type='button'
+            className='btn-close'
+            data-bs-dismiss='alert'
+            aria-label='Close'
+          />
+        </div>
+      )}
+
+      {userMsg && (
+        <div
           className='alert alert-warning mx-auto text-center'
           style={{ maxWidth: '300px' }}
         >
-          <p className='mb-1'>{msg}</p>
-          <Link to='/check-in'>Check in</Link>
+          <span className='mb-1'>{userMsg}</span>
+          <Link to='check-in'>Check in</Link>
         </div>
       )}
+
+      {showDeactivateModal && <DeactivateModal />}
+      {showCheckoutModal && <CheckOutModal />}
 
       {!loading && allUsers.length > 0 && (
         <div className='d-flex h-100 border rounded'>
@@ -133,8 +253,14 @@ export function Dashboard () {
                           </td>
                           <td>{user.purpose}</td>
                           <td>
-                            <a href='' className='text-danger'>
-                              Deactivate
+                            <a
+                              className='text-danger button-link'
+                              onClick={() => {
+                  setSelectedUser(user)
+                  setShowDeactivateModal(true)
+                }}
+                            >
+                            Deactivate
                             </a>
                           </td>
                         </tr>
@@ -144,7 +270,7 @@ export function Dashboard () {
                 </div>
                 )
               : (
-                <p>No active users are available.</p>
+                <p>No active users available.</p>
                 )}
           </div>
         </div>

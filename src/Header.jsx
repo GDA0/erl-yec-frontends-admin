@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 
-export function Header ({ user }) {
+export function Header ({ user, setShowCheckoutModal }) {
   return (
     <header>
       <nav className='navbar fixed-top bg-white border-bottom border-1'>
@@ -11,7 +11,10 @@ export function Header ({ user }) {
             <>
               <div className='ms-auto'>Welcome, {user.firstName}</div>
               <span className='mx-2'>|</span>
-              <a href='' className='text-danger'>
+              <a
+                className='text-danger button-link'
+                onClick={() => setShowCheckoutModal(true)}
+              >
                 Check out
               </a>
             </>
@@ -26,5 +29,6 @@ Header.propTypes = {
   user: PropTypes.shape({
     _id: PropTypes.string.isRequired,
     firstName: PropTypes.string.isRequired
-  }).isRequired
+  }).isRequired,
+  setShowCheckoutModal: PropTypes.func.isRequired
 }
